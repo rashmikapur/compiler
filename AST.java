@@ -32,6 +32,22 @@ public class AST {
 		T visit(Number num);
 
 		T visit(Type type);
+
+		T visit(HIGH high);
+
+		T visit(LOW low);
+
+		T visit(setUp setUp);
+
+		T visit(pinMode pinMode);
+
+		T visit(digitalWrite digitalWrite);
+
+		T visit(analogWrite analogWrite);
+
+		T visit(digitalRead digitalRead);
+
+		T visit(analogRead analogRead);
 	}
 
 	// Create interface Statement 
@@ -165,7 +181,149 @@ public class AST {
 	public static Loop loop(Expression predicate, Statement body) {
 		return new Loop(predicate, body);
 	}
+	
+	// Create setUp function 
+	public static class setUp implements Statement {
+		Statement body;
 
+		public setUp(Statement body) {
+			this.body = body;
+		}
+
+		public <T> T accept(Visitor<T> v) {
+			return v.visit(this);
+		}
+	}
+
+	public static setUp setup(Statement body) {
+		return new setUp(body);
+	}
+	
+	// Create pinMode 
+	public static class pinMode implements Statement {
+		Expression predicate;
+		Expression value;
+
+		public pinMode(Expression p, Expression value) {
+			predicate = p;
+			this.value = value;
+		}
+
+		public <T> T accept(Visitor<T> v) {
+			return v.visit(this);
+		}
+	}
+	
+	// Create digitalWrite 
+	public static class digitalWrite implements Statement {
+		Expression predicate;
+		Expression value;
+
+		public digitalWrite(Expression p, Expression value) {
+			predicate = p;
+			this.value = value;
+		}
+
+		public <T> T accept(Visitor<T> v) {
+			return v.visit(this);
+		}
+	}
+
+	public static digitalWrite digitalwrite(Expression predicate, Expression value) {
+		return new digitalWrite(predicate, value);
+	}
+
+	// Create analogWrite 
+	public static class analogWrite implements Statement {
+		Expression predicate;
+		Expression value;
+
+		public analogWrite(Expression p, Expression value) {
+			predicate = p;
+			this.value = value;
+		}
+
+		public <T> T accept(Visitor<T> v) {
+			return v.visit(this);
+		}
+	}
+
+	public static analogWrite analogwrite(Expression predicate, Expression value) {
+		return new analogWrite(predicate, value);
+	}
+	
+	// Create digitalRead 
+	public static class digitalRead implements Statement {
+		Expression predicate;
+		Expression value;
+
+		public digitalRead(Expression p, Expression value) {
+			predicate = p;
+			this.value = value;
+		}
+
+		public <T> T accept(Visitor<T> v) {
+			return v.visit(this);
+		}
+	}
+
+	public static digitalRead digitalread(Expression predicate, Expression value) {
+		return new digitalRead(predicate, value);
+	}
+	
+	// Create digitalRead 
+	public static class analogRead implements Statement {
+		Expression predicate;
+		Expression value;
+
+		public analogRead(Expression p, Expression value) {
+			predicate = p;
+			this.value = value;
+		}
+
+		public <T> T accept(Visitor<T> v) {
+			return v.visit(this);
+		}
+	}
+
+	public static analogRead analogread(Expression predicate, Expression value) {
+		return new analogRead(predicate, value);
+	}
+	
+	// Create HIGH and LOW expression
+	public static class HIGH implements Expression {
+		int value;
+
+		public HIGH() {
+			this.value = 1;
+		}
+
+		public <T> T accept(Visitor<T> v) {
+			return v.visit(this);
+		}
+	}
+
+	public static HIGH high() {
+		return new HIGH();
+	}
+	
+	public static class LOW implements Expression {
+		int value;
+
+		public LOW() {
+			this.value = 0;
+		}
+
+		public <T> T accept(Visitor<T> v) {
+			return v.visit(this);
+		}
+	}
+
+	public static LOW low() {
+		return new LOW();
+	}
+	
+	
 	public static class Number implements Expression {
 		int n;
 
@@ -305,6 +463,60 @@ public class AST {
 		public Integer visit(Assign assign) {
 			return null;
 		}
+
+		@Override
+		public Integer visit(Type type) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Integer visit(HIGH high) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Integer visit(LOW low) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Integer visit(setUp setUp) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Integer visit(pinMode pinMode) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Integer visit(digitalWrite digitalWrite) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Integer visit(analogWrite analogWrite) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Integer visit(digitalRead digitalRead) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Integer visit(analogRead analogRead) {
+			// TODO Auto-generated method stub
+			return null;
+		}
 	}
 
 	public static class StatementInterpreter implements Visitor<Void> {
@@ -361,6 +573,60 @@ public class AST {
 		}
 
 		public Void visit(Number num) {
+			return null;
+		}
+
+		@Override
+		public Void visit(Type type) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Void visit(HIGH high) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Void visit(LOW low) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Void visit(setUp setUp) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Void visit(pinMode pinMode) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Void visit(digitalWrite digitalWrite) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Void visit(analogWrite analogWrite) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Void visit(digitalRead digitalRead) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Void visit(analogRead analogRead) {
+			// TODO Auto-generated method stub
 			return null;
 		}
 	}
