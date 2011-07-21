@@ -1,4 +1,4 @@
-public class testingLab {
+public class ScanParse {
 
 	public static void main(String[] args) {
 		String source = "pinX is 5888.";
