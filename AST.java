@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -6,8 +7,8 @@ public class AST {
 	public interface Node {
 		<T> T accept(Visitor<T> v);
 	}
-	
-	// Create an interface Visitor 
+
+	// Create an interface Visitor
 	public interface Visitor<T> {
 		T visit(Loop loop);
 
@@ -48,9 +49,46 @@ public class AST {
 		T visit(digitalRead digitalRead);
 
 		T visit(analogRead analogRead);
+
+		T visit(Program program);
+
+		T visit(is is);
 	}
 
-	// Create interface Statement 
+	public static class Program implements Node {
+		public Node body;
+
+		Program(Sequence sequence) {
+			body = sequence;
+		}
+
+		public <T> T accept(Visitor<T> v) {
+			return v.visit(this);
+		}
+	}
+
+	public class Sequence implements Node {
+		ArrayList<Node> children = new ArrayList<Node>();
+
+		@Override
+		public <T> T accept(Visitor<T> v) {
+			for (Node child : children) {
+				child.accept(v);
+			}
+			return null;
+		}
+
+		public void addNode(Node n) {
+			children.add(n);
+		}
+	}
+
+	// Create interface Program
+	public static Program parse(String str) {
+		return new Program(new AST().doParse(str));
+	}
+
+	// Create interface Statement
 	public interface Statement extends Node {
 	}
 
@@ -74,7 +112,7 @@ public class AST {
 	public static Id id(String id) {
 		return new Id(id);
 	}
-	
+
 	// Create interface Type for variable types
 	public static class Type implements Expression {
 		String type;
@@ -138,9 +176,9 @@ public class AST {
 		public Branch(Expression p, Statement a) {
 			predicate = p;
 			ifBranch = a;
-			
+
 		}
-		
+
 		// If - Else Branch
 		public Branch(Expression p, Statement a, Statement b) {
 			predicate = p;
@@ -157,13 +195,14 @@ public class AST {
 	public static Branch branch(Expression predicate, Statement ifBranch) {
 		return new Branch(predicate, ifBranch);
 	}
+
 	// If - Else
 	public static Branch branch(Expression predicate, Statement ifBranch,
 			Statement elseBranch) {
 		return new Branch(predicate, ifBranch, elseBranch);
 	}
-	
-	// Create Loop 
+
+	// Create Loop
 	public static class Loop implements Statement {
 		Expression predicate;
 		Statement body;
@@ -181,8 +220,8 @@ public class AST {
 	public static Loop loop(Expression predicate, Statement body) {
 		return new Loop(predicate, body);
 	}
-	
-	// Create setUp function 
+
+	// Create setUp function
 	public static class setUp implements Statement {
 		Statement body;
 
@@ -198,8 +237,8 @@ public class AST {
 	public static setUp setup(Statement body) {
 		return new setUp(body);
 	}
-	
-	// Create pinMode 
+
+	// Create pinMode
 	public static class pinMode implements Statement {
 		Expression predicate;
 		Expression value;
@@ -213,8 +252,8 @@ public class AST {
 			return v.visit(this);
 		}
 	}
-	
-	// Create digitalWrite 
+
+	// Create digitalWrite
 	public static class digitalWrite implements Statement {
 		Expression predicate;
 		Expression value;
@@ -229,11 +268,12 @@ public class AST {
 		}
 	}
 
-	public static digitalWrite digitalwrite(Expression predicate, Expression value) {
+	public static digitalWrite digitalwrite(Expression predicate,
+			Expression value) {
 		return new digitalWrite(predicate, value);
 	}
 
-	// Create analogWrite 
+	// Create analogWrite
 	public static class analogWrite implements Statement {
 		Expression predicate;
 		Expression value;
@@ -251,8 +291,8 @@ public class AST {
 	public static analogWrite analogwrite(Expression predicate, Expression value) {
 		return new analogWrite(predicate, value);
 	}
-	
-	// Create digitalRead 
+
+	// Create digitalRead
 	public static class digitalRead implements Statement {
 		Expression predicate;
 		Expression value;
@@ -270,8 +310,8 @@ public class AST {
 	public static digitalRead digitalread(Expression predicate, Expression value) {
 		return new digitalRead(predicate, value);
 	}
-	
-	// Create digitalRead 
+
+	// Create digitalRead
 	public static class analogRead implements Statement {
 		Expression predicate;
 		Expression value;
@@ -289,6 +329,14 @@ public class AST {
 	public static analogRead analogread(Expression predicate, Expression value) {
 		return new analogRead(predicate, value);
 	}
+
+	// Create is expression
+	public static class is implements Expression {
+		public <T> T accept(Visitor<T> v) {
+			return v.visit(this);
+		}
+	}
+
 	
 	// Create HIGH and LOW expression
 	public static class HIGH implements Expression {
@@ -306,7 +354,7 @@ public class AST {
 	public static HIGH high() {
 		return new HIGH();
 	}
-	
+
 	public static class LOW implements Expression {
 		int value;
 
@@ -322,8 +370,7 @@ public class AST {
 	public static LOW low() {
 		return new LOW();
 	}
-	
-	
+
 	public static class Number implements Expression {
 		int n;
 
@@ -410,6 +457,60 @@ public class AST {
 		return new Divide(left, right);
 	}
 
+	// -----------------------------------------------------------
+	public static Sequence doParse(String source) {
+		int index = 0;
+		String output = "";
+		Sequence sequence = null;
+		
+		// This while loop will go until it hits .
+		while (source.charAt(index) != '.') {
+			output = output + source.charAt(index);
+			index++;
+
+			if (source.charAt(index) == ' ') {
+				// System.out.println("WHITE SPACE IS AT :" +index1);
+				index++;
+				System.out.println(output);
+				doParseToken(sequence, output);
+				output = "";
+			} else if (source.charAt(index) == '.') {
+				System.out.println(output);
+				doParseToken(sequence, output);
+				break;
+			}
+
+		}
+		return sequence;
+	}
+
+	public static void doParseToken(Sequence sequence, String token) {
+
+		if (token.equals("is")) {
+			// add class = to AST
+			sequence.addNode(new is());
+		}
+		if (isDigit(token)) {
+			sequence.addNode(new Number(Integer.parseInt(token)));
+		}
+		if (token.equals("pinX")) {
+			sequence.addNode(new Id(token));
+		}
+	}
+
+	public static boolean isDigit(String token) {
+		int index = 0;
+		while (index < token.length()) {
+			Character c = token.charAt(index);
+			if (!Character.isDigit(c)) {
+				return false;
+			}
+			index++;
+		}
+		return true;
+	}
+
+	// -------------------------------------------------------------------------------
 	public static class ExpressionInterpreter implements Visitor<Integer> {
 		Map<String, Integer> symbols;
 
@@ -514,6 +615,18 @@ public class AST {
 
 		@Override
 		public Integer visit(analogRead analogRead) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Integer visit(Program program) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Integer visit(is is) {
 			// TODO Auto-generated method stub
 			return null;
 		}
@@ -626,6 +739,18 @@ public class AST {
 
 		@Override
 		public Void visit(analogRead analogRead) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Void visit(Program program) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Void visit(is is) {
 			// TODO Auto-generated method stub
 			return null;
 		}
