@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+
 public class AST {
 	// Create an interface Node to reuse
 	public interface Node {
@@ -52,7 +53,8 @@ public class AST {
 
 		T visit(Program program);
 
-		T visit(is is);
+		T visit(forLoop forLoop);
+
 	}
 
 	public static class Program implements Node {
@@ -81,11 +83,6 @@ public class AST {
 		public void addNode(Node n) {
 			children.add(n);
 		}
-	}
-
-	// Create interface Program
-	public static Program parse(String str) {
-		return new Program(new AST().doParse(str));
 	}
 
 	// Create interface Statement
@@ -156,6 +153,7 @@ public class AST {
 		public Block(Statement... statements) {
 			this.statements = statements;
 		}
+		
 
 		public <T> T accept(Visitor<T> v) {
 			return v.visit(this);
@@ -219,6 +217,29 @@ public class AST {
 
 	public static Loop loop(Expression predicate, Statement body) {
 		return new Loop(predicate, body);
+	}
+	
+	// Create For Loop
+	public static class forLoop implements Statement {
+		Expression id;
+		Expression initValue;
+		Expression maxValue;
+		Sequence[] body;
+
+		public forLoop(Expression id, Expression init, Expression max, Sequence[] body) {
+			this.id = id;
+			initValue = init;
+			maxValue = max;
+			this.body = body;
+		}
+
+		public <T> T accept(Visitor<T> v) {
+			return v.visit(this);
+		}
+	}
+
+	public static forLoop forloop(Expression id, Expression initValue, Expression maxValue, Sequence[] body) {
+		return new forLoop(id, initValue, maxValue, body);
 	}
 
 	// Create setUp function
@@ -294,12 +315,10 @@ public class AST {
 
 	// Create digitalRead
 	public static class digitalRead implements Statement {
-		Expression predicate;
-		Expression value;
+		Expression id;
 
-		public digitalRead(Expression p, Expression value) {
-			predicate = p;
-			this.value = value;
+		public digitalRead(Expression id) {
+			this.id = id;
 		}
 
 		public <T> T accept(Visitor<T> v) {
@@ -307,8 +326,8 @@ public class AST {
 		}
 	}
 
-	public static digitalRead digitalread(Expression predicate, Expression value) {
-		return new digitalRead(predicate, value);
+	public static digitalRead digitalread(Expression predicate) {
+		return new digitalRead(predicate);
 	}
 
 	// Create digitalRead
@@ -330,14 +349,6 @@ public class AST {
 		return new analogRead(predicate, value);
 	}
 
-	// Create is expression
-	public static class is implements Expression {
-		public <T> T accept(Visitor<T> v) {
-			return v.visit(this);
-		}
-	}
-
-	
 	// Create HIGH and LOW expression
 	public static class HIGH implements Expression {
 		int value;
@@ -458,44 +469,101 @@ public class AST {
 	}
 
 	// -----------------------------------------------------------
-	public static Sequence doParse(String source) {
+	public static Program parse(String str) {
+		return new Program(new AST().doParse(str));
+	}
+	
+	public Sequence doParse(String source) {
 		int index = 0;
-		String output = "";
-		Sequence sequence = null;
-		
-		// This while loop will go until it hits .
-		while (source.charAt(index) != '.') {
-			output = output + source.charAt(index);
-			index++;
+		String[] statements = null;
+		String[] tokens = null;
+		Sequence sequence = new Sequence();
 
-			if (source.charAt(index) == ' ') {
-				// System.out.println("WHITE SPACE IS AT :" +index1);
-				index++;
-				System.out.println(output);
-				doParseToken(sequence, output);
-				output = "";
-			} else if (source.charAt(index) == '.') {
-				System.out.println(output);
-				doParseToken(sequence, output);
-				break;
+		// Split source codes to different statements end with .
+		String seqDelim = "\\.";
+		statements = source.split(seqDelim);
+
+		String tokenDelim = " ";
+		// Parse each statement to tokens
+		while (index < statements.length) {
+			tokens = statements[index].split(tokenDelim);
+			// digital Write statement must contain HIGH or LOW
+			if (tokens[0].trim().equalsIgnoreCase("digitalWrite")) {
+				if (tokens[1].trim().equalsIgnoreCase("LOW")
+						&& tokens[2].trim().equalsIgnoreCase("to")) {
+					sequence.addNode(new digitalWrite(new Id(tokens[3].trim()),
+							new LOW()));
+				}else if (tokens[1].trim().equalsIgnoreCase("HIGH")
+						&& tokens[2].trim().equalsIgnoreCase("to")) {
+					sequence.addNode(new digitalWrite(new Id(tokens[3].trim()),
+							new HIGH()));
+				}else{
+					System.out.println("Error");
+					break;
+				}
+			} 
+			// analog Write statement must contain an int
+			else if (tokens[0].trim().equalsIgnoreCase("analogWrite")) {
+				if (isDigit(tokens[1].trim())
+						&& tokens[2].trim().equalsIgnoreCase("to")) {
+					sequence.addNode(new analogWrite(new Id(tokens[3].trim()),
+							new Number(Integer.parseInt(tokens[1].trim()))));
+				}else{
+					System.out.println("Error");
+					break;
+				}
 			}
-
+			// digital Read statement
+			else if (tokens[0].trim().equalsIgnoreCase("digitalRead")) {
+				if (tokens[1].trim().equalsIgnoreCase("from")) {
+					sequence.addNode(new digitalRead(new Id(tokens[2].trim())));
+				}else{
+					System.out.println("Error");
+					break;
+				}
+			}
+			// analog Read statement
+			else if (tokens[0].trim().equalsIgnoreCase("analogRead")) {
+				if (tokens[1].trim().equalsIgnoreCase("from")) {
+					sequence.addNode(new digitalRead(new Id(tokens[2].trim())));
+				}else{
+					System.out.println("Error");
+					break;
+				}
+			}
+			// For Loop statement
+			else if (tokens[0].trim().equalsIgnoreCase("For")) {
+				if (isDigit(tokens[3].trim()) && isDigit(tokens[6].trim())) {
+					String[] newTokens;
+					Sequence[] seq = null;
+					int index2 = 0;
+					index++;
+					newTokens = statements[index].split(tokenDelim);
+					
+					while(!newTokens[0].trim().equalsIgnoreCase("End") && !newTokens[1].trim().equalsIgnoreCase("for")){
+						newTokens = statements[index].split(tokenDelim);
+						seq[index2] = doParse(statements[index]);
+						index2++;
+					}
+					sequence.addNode(new forLoop(new Id(tokens[1].trim()), new Number(Integer.parseInt(tokens[3].trim())), new Number(Integer.parseInt(tokens[6].trim())), seq));
+					index++;
+				}else{
+					System.out.println("Error");
+					break;
+				}
+			}
+			// Last case - Assign - when first token doesn't match any
+			else {
+				if (tokens[1].trim().equalsIgnoreCase("is") && isDigit(tokens[2])) {
+					sequence.addNode(new Assign(new Id(tokens[0].trim()), new Number(Integer.parseInt(tokens[2].trim()))));
+				}else{
+					System.out.println("Unknown Statement.");
+					break;
+				}
+			}
 		}
 		return sequence;
-	}
 
-	public static void doParseToken(Sequence sequence, String token) {
-
-		if (token.equals("is")) {
-			// add class = to AST
-			sequence.addNode(new is());
-		}
-		if (isDigit(token)) {
-			sequence.addNode(new Number(Integer.parseInt(token)));
-		}
-		if (token.equals("pinX")) {
-			sequence.addNode(new Id(token));
-		}
 	}
 
 	public static boolean isDigit(String token) {
@@ -511,276 +579,11 @@ public class AST {
 	}
 
 	// -------------------------------------------------------------------------------
-	public static class ExpressionInterpreter implements Visitor<Integer> {
-		Map<String, Integer> symbols;
-
-		public ExpressionInterpreter(Map<String, Integer> symbols) {
-			this.symbols = symbols;
-		}
-
-		public Integer visit(Id id) {
-			if (symbols.containsKey(id.id))
-				return symbols.get(id.id);
-			else
-				return 0;
-		}
-
-		public Integer visit(Operator op) {
-			return null;
-		}
-
-		public Integer visit(Plus op) {
-			return op.left.accept(this) + op.right.accept(this);
-		}
-
-		public Integer visit(Minus op) {
-			return op.left.accept(this) - op.right.accept(this);
-		}
-
-		public Integer visit(Times op) {
-			return op.left.accept(this) * op.right.accept(this);
-		}
-
-		public Integer visit(Divide op) {
-			return op.left.accept(this) * op.right.accept(this);
-		}
-
-		public Integer visit(Number num) {
-			return num.n;
-		}
-
-		public Integer visit(Loop loop) {
-			return null;
-		}
-
-		public Integer visit(Branch branch) {
-			return null;
-		}
-
-		public Integer visit(Block block) {
-			return null;
-		}
-
-		public Integer visit(Assign assign) {
-			return null;
-		}
-
-		@Override
-		public Integer visit(Type type) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Integer visit(HIGH high) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Integer visit(LOW low) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Integer visit(setUp setUp) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Integer visit(pinMode pinMode) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Integer visit(digitalWrite digitalWrite) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Integer visit(analogWrite analogWrite) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Integer visit(digitalRead digitalRead) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Integer visit(analogRead analogRead) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Integer visit(Program program) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Integer visit(is is) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-	}
-
-	public static class StatementInterpreter implements Visitor<Void> {
-		Map<String, Integer> symbols = new HashMap<String, Integer>();
-		ExpressionInterpreter eval = new ExpressionInterpreter(symbols);
-
-		public Void visit(Loop loop) {
-			while (loop.predicate.accept(eval) != 0)
-				loop.body.accept(this);
-			return null;
-		}
-
-		public Void visit(Branch branch) {
-			if (branch.predicate.accept(eval) != 0)
-				branch.ifBranch.accept(this);
-			else
-				branch.elseBranch.accept(this);
-			return null;
-		}
-
-		public Void visit(Block block) {
-			for (Statement s : block.statements)
-				s.accept(this);
-			return null;
-		}
-
-		public Void visit(Assign assign) {
-			symbols.put(assign.variable.id, assign.value.accept(eval));
-			return null;
-		}
-
-		public Void visit(Id id) {
-			return null;
-		}
-
-		public Void visit(Operator op) {
-			return null;
-		}
-
-		public Void visit(Plus op) {
-			return null;
-		}
-
-		public Void visit(Minus op) {
-			return null;
-		}
-
-		public Void visit(Times op) {
-			return null;
-		}
-
-		public Void visit(Divide op) {
-			return null;
-		}
-
-		public Void visit(Number num) {
-			return null;
-		}
-
-		@Override
-		public Void visit(Type type) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Void visit(HIGH high) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Void visit(LOW low) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Void visit(setUp setUp) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Void visit(pinMode pinMode) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Void visit(digitalWrite digitalWrite) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Void visit(analogWrite analogWrite) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Void visit(digitalRead digitalRead) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Void visit(analogRead analogRead) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Void visit(Program program) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Void visit(is is) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-	}
 
 	public static void main(String[] args) {
-		/*
-		 * Example program from book
-		 */
-		Node program = branch(
-				plus(id("x"), id("y")),
-				block(loop(id("z"), assign(id("z"), plus(id("z"), number(1)))),
-						assign(id("x"), number(8))), assign(id("z"), number(7)));
-		/*
-		 * Factorial Program equivalent to: int factorial = 1; int i = 5; while
-		 * (i != 0) { factorial = factorial * i; i = i - 1; }
-		 */
-		Node factorial = block(
-				assign(id("factorial"), number(1)),
-				assign(id("i"), number(5)),
-				loop(id("i"),
-						block(assign(id("factorial"),
-								times(id("factorial"), id("i"))),
-								assign(id("i"), minus(id("i"), number(1))))));
-		StatementInterpreter runner = new StatementInterpreter();
-		factorial.accept(runner);
-		/*
-		 * Print the symbols in the interpreter.
-		 */
-		for (String s : runner.symbols.keySet())
-			System.out.format("%s: %d\n", s, runner.symbols.get(s));
+		String source = "pinX is 5.";
+		//Invalid source String source = "pinX is five."
+		
+		Node newNode = AST.parse(source);
 	}
 }
