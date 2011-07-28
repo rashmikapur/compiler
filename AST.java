@@ -221,12 +221,12 @@ public class AST {
 	
 	// Create For Loop
 	public static class forLoop implements Statement {
-		Expression id;
-		Expression initValue;
-		Expression maxValue;
+		Id id;
+		Number initValue;
+		Number maxValue;
 		Sequence body;
 
-		public forLoop(Expression id, Expression init, Expression max, Sequence body) {
+		public forLoop(Id id, Number init, Number max, Sequence body) {
 			this.id = id;
 			initValue = init;
 			maxValue = max;
@@ -238,7 +238,7 @@ public class AST {
 		}
 	}
 
-	public static forLoop forloop(Expression id, Expression initValue, Expression maxValue, Sequence body) {
+	public static forLoop forloop(Id id, Number initValue, Number maxValue, Sequence body) {
 		return new forLoop(id, initValue, maxValue, body);
 	}
 
@@ -502,7 +502,7 @@ public class AST {
 					sequence.addNode(new digitalWrite(new Id(tokens[3].trim()),
 							new HIGH()));
 				}else{
-					System.out.println("Error");
+					System.out.println("Error @ "+statements[index]);
 					break;
 				}
 			} 
@@ -514,7 +514,7 @@ public class AST {
 					sequence.addNode(new analogWrite(new Id(tokens[3].trim()),
 							new Number(Integer.parseInt(tokens[1].trim()))));
 				}else{
-					System.out.println("Error");
+					System.out.println("Error @ "+statements[index]);
 					break;
 				}
 			}
@@ -524,7 +524,7 @@ public class AST {
 				if (tokens[1].trim().equalsIgnoreCase("from")) {
 					sequence.addNode(new digitalRead(new Id(tokens[2].trim())));
 				}else{
-					System.out.println("Error");
+					System.out.println("Error @ "+statements[index]);
 					break;
 				}
 			}
@@ -534,7 +534,7 @@ public class AST {
 				if (tokens[1].trim().equalsIgnoreCase("from")) {
 					sequence.addNode(new analogRead(new Id(tokens[2].trim())));
 				}else{
-					System.out.println("Error");
+					System.out.println("Error @ "+statements[index]);
 					break;
 				}
 			}
@@ -557,7 +557,7 @@ public class AST {
 					sequence.addNode(new forLoop(new Id(tokens[1].trim()), new Number(Integer.parseInt(tokens[3].trim())), new Number(Integer.parseInt(tokens[6].trim())), seq));
 					
 				}else{
-					System.out.println("Error");
+					System.out.println("Error @ "+statements[index]);
 					break;
 				}
 				
@@ -587,7 +587,7 @@ public class AST {
 						System.out.println("End DoWhile Caled");
 					}
 				}else{
-					System.out.println("Unknown Statement.");
+					System.out.println("Error @ "+statements[index]);
 					break;
 				}
 			}
@@ -754,7 +754,12 @@ public class AST {
 
 		@Override
 		public String visit(forLoop forLoop) {
-			// TODO Auto-generated method stub
+			Id name = forLoop.id;
+			Number start = forLoop.initValue;
+			Number end = forLoop.maxValue;
+			System.out.println("for(int "+name.id+" = "+start.n+"; "+name.id+" <"+end.n+"; "+name.id+"++){"	);
+			forLoop.body.accept(this);
+			System.out.println("}");
 			return null;
 		}
 		
@@ -762,12 +767,16 @@ public class AST {
 	// -------------------------------------------------------------------------------
 
 	public static void main(String[] args) {
-		String source = "pinY is 1010. PinX is 10. digitalWrite LOW to LEDPIN. analogWrite 1023 to LEDPIN. digitalRead from LEDPIN. analogRead from LEDPIN2.";
-		//String source = "analogRead from LedPin. For x is 0 increasing to 100. PinX is 5. analogRead from LedPin. PinY is 10. End for. digitalWrite HIGH to LedPin.";
-		//String source = "pinX is 5. digitalWrite HIGH to LedPin. analogRead from LedPin.";
+		//String source = "pinY is 5. PinX is 10. digitalWrite LOW to LEDPIN. analogWrite 1023 to LEDPIN. digitalRead from LEDPIN. analogRead from LEDPIN2.";
+		String source = "analogRead from LedPin. For x is 0 increasing to 100. PinX is 5. analogRead from LedPin. PinY is 10. End for. digitalWrite HIGH to LedPin.";
+		//String source = "For x is 0 increasing to 100. pinX is 5. End for.";
 		
 		Node newNode = AST.parse(source);
 		System.out.println("Finished Scanning and Parsing.");
+		System.out.println("#########");
+		System.out.println("Source: "+source);
+		System.out.println("#########");
+		System.out.println("Arduino Compiled: ");
 		newNode.accept(new AST.ArduinoCompiler());
 	}
 }
