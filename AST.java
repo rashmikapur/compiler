@@ -224,9 +224,9 @@ public class AST {
 		Expression id;
 		Expression initValue;
 		Expression maxValue;
-		Sequence[] body;
+		Sequence body;
 
-		public forLoop(Expression id, Expression init, Expression max, Sequence[] body) {
+		public forLoop(Expression id, Expression init, Expression max, Sequence body) {
 			this.id = id;
 			initValue = init;
 			maxValue = max;
@@ -238,7 +238,7 @@ public class AST {
 		}
 	}
 
-	public static forLoop forloop(Expression id, Expression initValue, Expression maxValue, Sequence[] body) {
+	public static forLoop forloop(Expression id, Expression initValue, Expression maxValue, Sequence body) {
 		return new forLoop(id, initValue, maxValue, body);
 	}
 
@@ -475,8 +475,8 @@ public class AST {
 	
 	public Sequence doParse(String source) {
 		int index = 0;
-		String[] statements = null;
-		String[] tokens = null;
+		String[] statements;
+		String[] tokens;
 		Sequence sequence = new Sequence();
 
 		// Split source codes to different statements end with .
@@ -486,9 +486,11 @@ public class AST {
 		String tokenDelim = " ";
 		// Parse each statement to tokens
 		while (index < statements.length) {
-			tokens = statements[index].split(tokenDelim);
+			//System.out.println(statements[index]);
+			tokens = statements[index].trim().split(tokenDelim);
 			// digital Write statement must contain HIGH or LOW
 			if (tokens[0].trim().equalsIgnoreCase("digitalWrite")) {
+				System.out.println("digitalWrite Called");
 				if (tokens[1].trim().equalsIgnoreCase("LOW")
 						&& tokens[2].trim().equalsIgnoreCase("to")) {
 					sequence.addNode(new digitalWrite(new Id(tokens[3].trim()),
@@ -504,6 +506,7 @@ public class AST {
 			} 
 			// analog Write statement must contain an int
 			else if (tokens[0].trim().equalsIgnoreCase("analogWrite")) {
+				System.out.println("analogWrite Called");
 				if (isDigit(tokens[1].trim())
 						&& tokens[2].trim().equalsIgnoreCase("to")) {
 					sequence.addNode(new analogWrite(new Id(tokens[3].trim()),
@@ -515,6 +518,7 @@ public class AST {
 			}
 			// digital Read statement
 			else if (tokens[0].trim().equalsIgnoreCase("digitalRead")) {
+				System.out.println("digitalRead Called");
 				if (tokens[1].trim().equalsIgnoreCase("from")) {
 					sequence.addNode(new digitalRead(new Id(tokens[2].trim())));
 				}else{
@@ -524,6 +528,7 @@ public class AST {
 			}
 			// analog Read statement
 			else if (tokens[0].trim().equalsIgnoreCase("analogRead")) {
+				System.out.println("analogRead Called");
 				if (tokens[1].trim().equalsIgnoreCase("from")) {
 					sequence.addNode(new digitalRead(new Id(tokens[2].trim())));
 				}else{
@@ -533,20 +538,22 @@ public class AST {
 			}
 			// For Loop statement
 			else if (tokens[0].trim().equalsIgnoreCase("For")) {
+				System.out.println("For Loop Called");
 				if (isDigit(tokens[3].trim()) && isDigit(tokens[6].trim())) {
 					String[] newTokens;
-					Sequence[] seq = null;
-					int index2 = 0;
+					Sequence seq = new Sequence();
 					index++;
 					newTokens = statements[index].split(tokenDelim);
 					
 					while(!newTokens[0].trim().equalsIgnoreCase("End") && !newTokens[1].trim().equalsIgnoreCase("for")){
-						newTokens = statements[index].split(tokenDelim);
-						seq[index2] = doParse(statements[index]);
-						index2++;
+						System.out.println("Inner block of For Loop");
+						//System.out.println("Statement:"+statements[index]);
+						newTokens = statements[index].trim().split(tokenDelim);
+						seq.addNode(doParse(statements[index]));
+						index++;
 					}
 					sequence.addNode(new forLoop(new Id(tokens[1].trim()), new Number(Integer.parseInt(tokens[3].trim())), new Number(Integer.parseInt(tokens[6].trim())), seq));
-					index++;
+					
 				}else{
 					System.out.println("Error");
 					break;
@@ -554,13 +561,34 @@ public class AST {
 			}
 			// Last case - Assign - when first token doesn't match any
 			else {
+				
 				if (tokens[1].trim().equalsIgnoreCase("is") && isDigit(tokens[2])) {
+					System.out.println("Assign Called");
 					sequence.addNode(new Assign(new Id(tokens[0].trim()), new Number(Integer.parseInt(tokens[2].trim()))));
+				}else if (tokens[0].trim().equalsIgnoreCase("End")){
+					if (tokens[1].trim().equalsIgnoreCase("setup")){
+						System.out.println("End Setup Called");
+					}else if (tokens[1].trim().equalsIgnoreCase("loop")){
+						System.out.println("End Loop Caled");
+					}else if (tokens[1].trim().equalsIgnoreCase("if")){
+						System.out.println("End If Caled");
+					}else if (tokens[1].trim().equalsIgnoreCase("ifelse")){
+						System.out.println("End IfElse Caled");
+					}else if (tokens[1].trim().equalsIgnoreCase("for")){
+						System.out.println("End For Loop Caled");
+					}else if (tokens[1].trim().equalsIgnoreCase("switch")){
+						System.out.println("End Switch Caled");
+					}else if (tokens[1].trim().equalsIgnoreCase("while")){
+						System.out.println("End While Caled");
+					}else if (tokens[1].trim().equalsIgnoreCase("dowhile")){
+						System.out.println("End DoWhile Caled");
+					}
 				}else{
 					System.out.println("Unknown Statement.");
 					break;
 				}
 			}
+			index++;
 		}
 		return sequence;
 
@@ -581,9 +609,11 @@ public class AST {
 	// -------------------------------------------------------------------------------
 
 	public static void main(String[] args) {
-		String source = "pinX is 5.";
-		//Invalid source String source = "pinX is five."
+		//String source = "PinX is 5.";
+		String source = "For x is 0 increasing to 100. PinX is 5. PinY is 10. End for.";
+		//String source = "pinX is 5. digitalWrite HIGH to LedPin. analogRead from LedPin.";
 		
 		Node newNode = AST.parse(source);
+		System.out.println("Done");
 	}
 }
