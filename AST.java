@@ -130,9 +130,9 @@ public class AST {
 	// Create interface Assign for "is"
 	public static class Assign implements Statement {
 		Id variable;
-		Expression value;
+		Number value;
 
-		public Assign(Id variable, Expression value) {
+		public Assign(Id variable, Number value) {
 			this.variable = variable;
 			this.value = value;
 		}
@@ -142,7 +142,7 @@ public class AST {
 		}
 	}
 
-	public static Assign assign(Id var, Expression val) {
+	public static Assign assign(Id var, Number val) {
 		return new Assign(var, val);
 	}
 
@@ -261,10 +261,10 @@ public class AST {
 
 	// Create pinMode
 	public static class pinMode implements Statement {
-		Expression predicate;
+		Id predicate;
 		Expression value;
 
-		public pinMode(Expression p, Expression value) {
+		public pinMode(Id p, Expression value) {
 			predicate = p;
 			this.value = value;
 		}
@@ -272,14 +272,18 @@ public class AST {
 		public <T> T accept(Visitor<T> v) {
 			return v.visit(this);
 		}
+	}
+	
+	public static pinMode pinMode(Id name, Expression value){
+		return new pinMode(name, value);
 	}
 
 	// Create digitalWrite
 	public static class digitalWrite implements Statement {
-		Expression predicate;
+		Id predicate;
 		Expression value;
 
-		public digitalWrite(Expression p, Expression value) {
+		public digitalWrite(Id p, Expression value) {
 			predicate = p;
 			this.value = value;
 		}
@@ -289,17 +293,17 @@ public class AST {
 		}
 	}
 
-	public static digitalWrite digitalwrite(Expression predicate,
+	public static digitalWrite digitalwrite(Id predicate,
 			Expression value) {
 		return new digitalWrite(predicate, value);
 	}
 
 	// Create analogWrite
 	public static class analogWrite implements Statement {
-		Expression predicate;
-		Expression value;
+		Id predicate;
+		Number value;
 
-		public analogWrite(Expression p, Expression value) {
+		public analogWrite(Id p, Number value) {
 			predicate = p;
 			this.value = value;
 		}
@@ -309,15 +313,15 @@ public class AST {
 		}
 	}
 
-	public static analogWrite analogwrite(Expression predicate, Expression value) {
+	public static analogWrite analogwrite(Id predicate, Number value) {
 		return new analogWrite(predicate, value);
 	}
 
 	// Create digitalRead
 	public static class digitalRead implements Statement {
-		Expression id;
+		Id id;
 
-		public digitalRead(Expression id) {
+		public digitalRead(Id id) {
 			this.id = id;
 		}
 
@@ -326,18 +330,16 @@ public class AST {
 		}
 	}
 
-	public static digitalRead digitalread(Expression predicate) {
+	public static digitalRead digitalread(Id predicate) {
 		return new digitalRead(predicate);
 	}
 
 	// Create digitalRead
 	public static class analogRead implements Statement {
-		Expression predicate;
-		Expression value;
+		Id id;
 
-		public analogRead(Expression p, Expression value) {
-			predicate = p;
-			this.value = value;
+		public analogRead(Id p) {
+			id = p;
 		}
 
 		public <T> T accept(Visitor<T> v) {
@@ -345,8 +347,8 @@ public class AST {
 		}
 	}
 
-	public static analogRead analogread(Expression predicate, Expression value) {
-		return new analogRead(predicate, value);
+	public static analogRead analogread(Id predicate) {
+		return new analogRead(predicate);
 	}
 
 	// Create HIGH and LOW expression
@@ -530,7 +532,7 @@ public class AST {
 			else if (tokens[0].trim().equalsIgnoreCase("analogRead")) {
 				System.out.println("analogRead Called");
 				if (tokens[1].trim().equalsIgnoreCase("from")) {
-					sequence.addNode(new digitalRead(new Id(tokens[2].trim())));
+					sequence.addNode(new analogRead(new Id(tokens[2].trim())));
 				}else{
 					System.out.println("Error");
 					break;
@@ -546,7 +548,7 @@ public class AST {
 					newTokens = statements[index].split(tokenDelim);
 					
 					while(!newTokens[0].trim().equalsIgnoreCase("End") && !newTokens[1].trim().equalsIgnoreCase("for")){
-						System.out.println("Inner block of For Loop");
+						//System.out.println("Inner block of For Loop");
 						//System.out.println("Statement:"+statements[index]);
 						newTokens = statements[index].trim().split(tokenDelim);
 						seq.addNode(doParse(statements[index]));
@@ -558,6 +560,7 @@ public class AST {
 					System.out.println("Error");
 					break;
 				}
+				
 			}
 			// Last case - Assign - when first token doesn't match any
 			else {
@@ -606,14 +609,165 @@ public class AST {
 		return true;
 	}
 
+	//-------------------------------------------------------
+	public static class ArduinoCompiler implements Visitor<String>{
+
+		@Override
+		public String visit(Loop loop) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Branch branch) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Block block) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Assign assign) {
+			Id name = assign.variable;
+			Number value = assign.value;
+			System.out.println("Int "+name.id+" = "+value.n+";");
+			return null;
+		}
+
+		@Override
+		public String visit(Id id) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Operator op) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Plus op) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Minus op) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Times op) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Divide op) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Number num) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Type type) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(HIGH high) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(LOW low) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(setUp setUp) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(pinMode pinMode) {
+			Id name = pinMode.predicate;
+			Expression value = pinMode.value;
+			System.out.println(name);
+			return null;
+		}
+
+		@Override
+		public String visit(digitalWrite digitalWrite) {
+			Id name = digitalWrite.predicate;
+			Expression value = digitalWrite.value;
+			if (value.getClass().equals(new HIGH())){
+				System.out.println("digitalWrite("+name.id+", HIGH);");
+			}else{
+				System.out.println("digitalWrite("+name.id+", LOW);");
+			}
+			return null;
+		}
+
+		@Override
+		public String visit(analogWrite analogWrite) {
+			Id name = analogWrite.predicate;
+			Number value = analogWrite.value;
+			System.out.println("analogWrite("+name.id+", "+value.n+");");
+			return null;
+		}
+
+		@Override
+		public String visit(digitalRead digitalRead) {
+			Id name = digitalRead.id;
+			System.out.println("digitalRead("+name.id+");");
+			return null;
+		}
+
+		@Override
+		public String visit(analogRead analogRead) {
+			Id name = analogRead.id;
+			System.out.println("analogRead("+name.id+");");
+			return null;
+		}
+
+		@Override
+		public String visit(Program program) {
+			program.body.accept(this);
+			return null;
+		}
+
+		@Override
+		public String visit(forLoop forLoop) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		
+	}
 	// -------------------------------------------------------------------------------
 
 	public static void main(String[] args) {
-		//String source = "PinX is 5.";
-		String source = "For x is 0 increasing to 100. PinX is 5. PinY is 10. End for.";
+		String source = "pinY is 1010. PinX is 10. digitalWrite LOW to LEDPIN. analogWrite 1023 to LEDPIN. digitalRead from LEDPIN. analogRead from LEDPIN2.";
+		//String source = "analogRead from LedPin. For x is 0 increasing to 100. PinX is 5. analogRead from LedPin. PinY is 10. End for. digitalWrite HIGH to LedPin.";
 		//String source = "pinX is 5. digitalWrite HIGH to LedPin. analogRead from LedPin.";
 		
 		Node newNode = AST.parse(source);
-		System.out.println("Done");
+		System.out.println("Finished Scanning and Parsing.");
+		newNode.accept(new AST.ArduinoCompiler());
 	}
 }
