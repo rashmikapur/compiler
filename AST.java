@@ -1,9 +1,13 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.awt.*;
+import java.awt.event.*;
+import java.applet.*;
+import javax.swing.*;
 
 
-public class AST {
+public class AST extends Applet implements ActionListener {
 	// Create an interface Node to reuse
 	public interface Node {
 		<T> T accept(Visitor<T> v);
@@ -764,19 +768,46 @@ public class AST {
 		}
 		
 	}
-	// -------------------------------------------------------------------------------
-
-	public static void main(String[] args) {
-		//String source = "pinY is 5. PinX is 10. digitalWrite LOW to LEDPIN. analogWrite 1023 to LEDPIN. digitalRead from LEDPIN. analogRead from LEDPIN2.";
-		String source = "analogRead from LedPin. For x is 0 increasing to 100. PinX is 5. analogRead from LedPin. PinY is 10. End for. digitalWrite HIGH to LedPin.";
-		//String source = "For x is 0 increasing to 100. pinX is 5. End for.";
+	// ------------------------------------------------------------------------------
+	//To print the source code using the GUI
+	 String source =" ";
+	 Button Input,Output,Debug;
+	 public void init()
+	 {
+		 Input= new Button("Input");
+		 Output=new Button("Output");
+		 Debug=new Button("Debug");		 
+		 add(Input);
+		 add(Output);
+		 add(Debug);
+		 Input.addActionListener(this);
+		 Output.addActionListener(this);
+		 Debug.addActionListener(this);
+	 		}
+		 public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				String str=e.getActionCommand();
+				//Prints the input
+				if(str.equals("Input")){
+					source="analogRead from LedPin. For x is 0 increasing to 100. PinX is 5. analogRead from LedPin. PinY is 10. End for. digitalWrite HIGH to LedPin.";
+			}
+				else if(str.equals("Output")){
+					//Prints the ouput
+					Node newNode = AST.parse(source);
+					source="Arduino Compiled: ";
+					newNode.accept(new AST.ArduinoCompiler());
+						}
+				else{
+					//prints the debug commands
+					source="Garbage";
+				}
+				repaint();
 		
-		Node newNode = AST.parse(source);
-		System.out.println("Finished Scanning and Parsing.");
-		System.out.println("#########");
-		System.out.println("Source: "+source);
-		System.out.println("#########");
-		System.out.println("Arduino Compiled: ");
-		newNode.accept(new AST.ArduinoCompiler());
-	}
+		 
+	 }
+		 public void paint(Graphics g)
+		 {
+			 g.drawString(source, 6, 100);
+		 }
+	
 }
