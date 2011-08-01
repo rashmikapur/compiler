@@ -55,6 +55,9 @@ public class AST {
 
 		T visit(forLoop forLoop);
 
+		T visit(IOvalue iOvalue);
+
+
 	}
 
 	public static class Program implements Node {
@@ -108,6 +111,23 @@ public class AST {
 
 	public static Id id(String id) {
 		return new Id(id);
+	}
+	
+	// Create interface IOvalue for variable names
+	public static class IOvalue implements Expression {
+		String value;
+
+		public IOvalue(String value) {
+			this.value = value;
+		}
+
+		public <T> T accept(Visitor<T> v) {
+			return v.visit(this);
+		}
+	}
+
+	public static IOvalue ioValue(String value) {
+		return new IOvalue(value);
 	}
 
 	// Create interface Type for variable types
@@ -202,11 +222,9 @@ public class AST {
 
 	// Create Loop
 	public static class Loop implements Statement {
-		Expression predicate;
-		Statement body;
+		Sequence body;
 
-		public Loop(Expression p, Statement body) {
-			predicate = p;
+		public Loop(Sequence body) {
 			this.body = body;
 		}
 
@@ -215,8 +233,8 @@ public class AST {
 		}
 	}
 
-	public static Loop loop(Expression predicate, Statement body) {
-		return new Loop(predicate, body);
+	public static Loop loop(Sequence body) {
+		return new Loop(body);
 	}
 	
 	// Create For Loop
@@ -244,9 +262,9 @@ public class AST {
 
 	// Create setUp function
 	public static class setUp implements Statement {
-		Statement body;
+		Sequence body;
 
-		public setUp(Statement body) {
+		public setUp(Sequence body) {
 			this.body = body;
 		}
 
@@ -255,16 +273,16 @@ public class AST {
 		}
 	}
 
-	public static setUp setup(Statement body) {
+	public static setUp setup(Sequence body) {
 		return new setUp(body);
 	}
 
 	// Create pinMode
 	public static class pinMode implements Statement {
 		Id predicate;
-		Expression value;
+		IOvalue value;
 
-		public pinMode(Id p, Expression value) {
+		public pinMode(Id p, IOvalue value) {
 			predicate = p;
 			this.value = value;
 		}
@@ -274,7 +292,7 @@ public class AST {
 		}
 	}
 	
-	public static pinMode pinMode(Id name, Expression value){
+	public static pinMode pinMode(Id name, IOvalue value){
 		return new pinMode(name, value);
 	}
 
@@ -518,6 +536,18 @@ public class AST {
 					break;
 				}
 			}
+			// pinMode statement
+			else if (tokens[0].trim().equalsIgnoreCase("Set")) {
+				System.out.println("Set PinMode Called");
+				if (tokens[1].trim().equalsIgnoreCase("pinMode")
+						&& tokens.length == 6) {
+					sequence.addNode(new pinMode(new Id(tokens[3].trim()),
+							new IOvalue(tokens[5].trim())));
+				}else{
+					System.out.println("Error @ "+statements[index]);
+					break;
+				}
+			}
 			// digital Read statement
 			else if (tokens[0].trim().equalsIgnoreCase("digitalRead")) {
 				System.out.println("digitalRead Called");
@@ -547,7 +577,7 @@ public class AST {
 					index++;
 					newTokens = statements[index].split(tokenDelim);
 					
-					while(!newTokens[0].trim().equalsIgnoreCase("End") && !newTokens[1].trim().equalsIgnoreCase("for")){
+					while(!newTokens[0].trim().equalsIgnoreCase("End") && !newTokens[1].trim().equalsIgnoreCase("forloop")){
 						//System.out.println("Inner block of For Loop");
 						//System.out.println("Statement:"+statements[index]);
 						newTokens = statements[index].trim().split(tokenDelim);
@@ -555,6 +585,50 @@ public class AST {
 						index++;
 					}
 					sequence.addNode(new forLoop(new Id(tokens[1].trim()), new Number(Integer.parseInt(tokens[3].trim())), new Number(Integer.parseInt(tokens[6].trim())), seq));
+					
+				}else{
+					System.out.println("Error @ "+statements[index]);
+					break;
+				}
+				
+			}
+			// Set Up statement
+			else if (tokens[0].trim().equalsIgnoreCase("Setup")) {
+				System.out.println("Setup Called");
+				if (statements[index].trim().length() == 5) {
+					String[] newTokens;
+					Sequence seq = new Sequence();
+					index++;
+					newTokens = statements[index].split(tokenDelim);
+					
+					while(!newTokens[0].trim().equalsIgnoreCase("End") && !newTokens[1].trim().equalsIgnoreCase("setup")){
+						newTokens = statements[index].trim().split(tokenDelim);
+						seq.addNode(doParse(statements[index]));
+						index++;
+					}
+					sequence.addNode(new setUp(seq));
+					
+				}else{
+					System.out.println("Error @ "+statements[index]);
+					break;
+				}
+				
+			}
+			// Loop statement
+			else if (tokens[0].trim().equalsIgnoreCase("Loop")) {
+				System.out.println("Loop Called");
+				if (statements[index].trim().length() == 4) {
+					String[] newTokens;
+					Sequence seq = new Sequence();
+					index++;
+					newTokens = statements[index].split(tokenDelim);
+					
+					while(!newTokens[0].trim().equalsIgnoreCase("End") && !newTokens[1].trim().equalsIgnoreCase("loop")){
+						newTokens = statements[index].trim().split(tokenDelim);
+						seq.addNode(doParse(statements[index]));
+						index++;
+					}
+					sequence.addNode(new Loop(seq));
 					
 				}else{
 					System.out.println("Error @ "+statements[index]);
@@ -577,7 +651,7 @@ public class AST {
 						System.out.println("End If Caled");
 					}else if (tokens[1].trim().equalsIgnoreCase("ifelse")){
 						System.out.println("End IfElse Caled");
-					}else if (tokens[1].trim().equalsIgnoreCase("for")){
+					}else if (tokens[1].trim().equalsIgnoreCase("forloop")){
 						System.out.println("End For Loop Caled");
 					}else if (tokens[1].trim().equalsIgnoreCase("switch")){
 						System.out.println("End Switch Caled");
@@ -614,7 +688,9 @@ public class AST {
 
 		@Override
 		public String visit(Loop loop) {
-			// TODO Auto-generated method stub
+			System.out.println("Loop(){");
+			loop.body.accept(this);
+			System.out.println("}");
 			return null;
 		}
 
@@ -700,15 +776,17 @@ public class AST {
 
 		@Override
 		public String visit(setUp setUp) {
-			// TODO Auto-generated method stub
+			System.out.println("Setup(){");
+			setUp.body.accept(this);
+			System.out.println("}");
 			return null;
 		}
 
 		@Override
 		public String visit(pinMode pinMode) {
 			Id name = pinMode.predicate;
-			Expression value = pinMode.value;
-			System.out.println(name);
+			IOvalue value = pinMode.value;
+			System.out.println("pinMode("+name.id+", "+value.value+");");
 			return null;
 		}
 
@@ -762,14 +840,21 @@ public class AST {
 			System.out.println("}");
 			return null;
 		}
+
+		@Override
+		public String visit(IOvalue iOvalue) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
 		
 	}
 	// -------------------------------------------------------------------------------
 
 	public static void main(String[] args) {
-		//String source = "pinY is 5. PinX is 10. digitalWrite LOW to LEDPIN. analogWrite 1023 to LEDPIN. digitalRead from LEDPIN. analogRead from LEDPIN2.";
-		String source = "analogRead from LedPin. For x is 0 increasing to 100. PinX is 5. analogRead from LedPin. PinY is 10. End for. digitalWrite HIGH to LedPin.";
-		//String source = "For x is 0 increasing to 100. pinX is 5. End for.";
+		String source = "For x is 0 increasing to 10. analogRead from PinX. End for. Setup. Set pinMode of PinX to OUTPUT. End setup.";
+		//String source = "analogRead from LedPin. For x is 0 increasing to 100. PinX is 5. analogRead from LedPin. PinY is 10. End for. digitalWrite HIGH to LedPin.";
+		//String source = "For x is 0 increasing to 100. pinX is 5. End forloop.";
 		
 		Node newNode = AST.parse(source);
 		System.out.println("Finished Scanning and Parsing.");
