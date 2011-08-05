@@ -1,5 +1,14 @@
 import java.util.ArrayList;
 
+/**import AST.Break;
+import AST.Id;
+import AST.Assign;
+import AST.Id;
+import AST.Number;
+import Break.Continue;
+import Break.Goto;
+import Break.Return;
+import Break.remainder; **/
 
 public class Arduino {
 	// Create an interface Node to reuse
@@ -52,6 +61,16 @@ public class Arduino {
 		T visit(forLoop forLoop);
 
 		T visit(IOvalue iOvalue);
+
+		T visit(Break break1);
+
+		T visit(Continue continue1);
+
+		T visit(Return return1);
+
+		T visit(Goto goto1);
+
+		T visit(remainder remainder);
 
 	}
 
@@ -345,6 +364,102 @@ public class Arduino {
 	public static analogRead analogread(Id predicate) {
 		return new analogRead(predicate);
 	}
+	
+	//**********************************************************************************
+
+	// Create Break
+		public static class Break implements Statement {
+			Id syntax;
+
+			public Break(Id variable) {
+				this.syntax = variable;
+			}
+
+			public <T> T accept(Visitor<T> v) {
+				return v.visit(this);
+			}
+		}
+
+		public static Break _break(Id var) {
+			return new Break(var);
+		}
+
+		// Create Continue
+		public static class Continue implements Statement {
+			Id variable;
+
+			public Continue(Id variable) {
+				this.variable = variable;
+			}
+
+			public <T> T accept(Visitor<T> v) {
+				return v.visit(this);
+			}
+		}
+
+		public static Continue _continue(Id var) {
+			return new Continue(var);
+		}
+
+		// Create Return
+		public static class Return implements Statement {
+			Id variable;
+
+			public Return(Id variable) {
+				this.variable = variable;
+			}
+
+			public <T> T accept(Visitor<T> v) {
+				return v.visit(this);
+			}
+		}
+
+		public static Return _return(Id var) {
+			return new Return(var);
+		}
+
+		// Create Goto
+		public static class Goto implements Statement {
+			Id variable;
+
+			public Goto(Id variable) {
+				this.variable = variable;
+			}
+
+			public <T> T accept(Visitor<T> v) {
+				return v.visit(this);
+			}
+		}
+
+		public static Goto _goto(Id var) {
+			return new Goto(var);
+		}
+
+		// Create Remainder
+		public static class remainder implements Statement {
+			Expression id;
+			Expression firstNumber;
+			Expression secNumber;
+
+			public remainder(Expression id, Expression firstNum, Expression secNum) {
+				this.id = id;
+				this.firstNumber = firstNum;
+				this.secNumber = secNum;
+			}
+
+			public <T> T accept(Visitor<T> v) {
+				return v.visit(this);
+			}
+		}
+
+		public static remainder remainder(Expression id, Expression firstNum,
+				Expression secNum) {
+			return new remainder(id, firstNum, secNum);
+		}
+		
+		
+
+	//**********************************************************************************
 
 	// Create HIGH and LOW expression
 	public static class HIGH implements Expression {
@@ -545,8 +660,8 @@ public class Arduino {
 			// analog Read statement
 			else if (tokens[0].trim().equalsIgnoreCase("analogRead")) {
 				System.out.println("analogRead Called");
-				if (tokens[1].trim().equalsIgnoreCase("from")
-						&& tokens.length == 3) {
+				if (tokens[2].trim().equalsIgnoreCase("from")
+						&& tokens.length == 4) {
 					sequence.addNode(new analogRead(new Id(tokens[2].trim())));
 				} else {
 					System.out.println("Error @ " + statements[index]);
@@ -627,44 +742,108 @@ public class Arduino {
 				}
 
 			}
-			// LArduino case - Assign - when first token doesn't match any
-			else {
+			
+			//********************************************************************
+			
+			// Break statement
+			else if (tokens[0].trim().equalsIgnoreCase("Break")) {
+				System.out.println("Break Called");
+					if (tokens.length == 1) {
+						sequence.addNode(new Break(new Id(tokens[0].trim())));
+					} else {
+						System.out.println("Error");
+						break;
+					}
+				}
+			
+			// Continue statement
+			else if (tokens[0].trim().equalsIgnoreCase("Continue")) {
+				System.out.println("Continue Called");
+					if (tokens.length == 1) {
+						sequence.addNode(new Break(new Id(tokens[0].trim())));
+					} else {
+						System.out.println("Error");
+						break;
+					}
+				}
+			
+			// Return statement
+						else if (tokens[0].trim().equalsIgnoreCase("Return")) {
+							System.out.println("Return Called");
+							if (tokens.length == 1) {
+								sequence.addNode(new Break(new Id(tokens[0].trim())));
+							} else {
+								System.out.println("Error");
+								break;
+							}
+						}
+			
+			// Goto statement
+					
+						else if (tokens[0].trim().equalsIgnoreCase("Goto")) {
+							System.out.println("Goto Called");
+							if (tokens[1].trim().contains("function")
+									&& tokens.length == 2){
+								sequence.addNode(new Break(new Id(tokens[0].trim())));
+							} else {
+								System.out.println("Invalid Goto Function.");
+								break;
+							}
+						}
+			//********************************************************************
+			// Last Arduino case - Assign - when first token doesn't match any
+			else{
 
 				if (tokens[1].trim().equalsIgnoreCase("is")
 						&& isDigit(tokens[2])) {
 					System.out.println("Assign Called");
 					sequence.addNode(new Assign(new Id(tokens[0].trim()),
 							new Number(Integer.parseInt(tokens[2].trim()))));
-				} else if (tokens[0].trim().equalsIgnoreCase("End")) {
-					if (tokens[1].trim().equalsIgnoreCase("setup")) {
-						System.out.println("End Setup Called");
-					} else if (tokens[1].trim().equalsIgnoreCase("loop")) {
-						System.out.println("End Loop Caled");
-					} else if (tokens[1].trim().equalsIgnoreCase("if")) {
-						System.out.println("End If Caled");
-					} else if (tokens[1].trim().equalsIgnoreCase("ifelse")) {
-						System.out.println("End IfElse Caled");
-					} else if (tokens[1].trim().equalsIgnoreCase("forloop")) {
-						System.out.println("End For Loop Caled");
-					} else if (tokens[1].trim().equalsIgnoreCase("switch")) {
-						System.out.println("End Switch Caled");
-					} else if (tokens[1].trim().equalsIgnoreCase("while")) {
-						System.out.println("End While Caled");
-					} else if (tokens[1].trim().equalsIgnoreCase("dowhile")) {
-						System.out.println("End DoWhile Caled");
+				} else if (tokens[1].trim().equalsIgnoreCase("is")
+						&& tokens[2].trim().equalsIgnoreCase("remainder")) {
+					if (isDigit(tokens[4]) && isDigit(tokens[6])) {
+						System.out.println("Remainder Called");
+						if (tokens.length == 7) {
+							sequence.addNode(new remainder(new Id(tokens[0]
+									.trim()), new Number(Integer
+									.parseInt(tokens[4])), new Number(Integer
+									.parseInt(tokens[6]))));
+						} else {
+							System.out.println("Error");
+							break;
+						}
+					} else if (tokens[0].trim().equalsIgnoreCase("End")) {
+						if (tokens[1].trim().equalsIgnoreCase("setup")) {
+							System.out.println("End Setup Called");
+						} else if (tokens[1].trim().equalsIgnoreCase("loop")) {
+							System.out.println("End Loop Called");
+						} else if (tokens[1].trim().equalsIgnoreCase("if")) {
+							System.out.println("End If Called");
+						} else if (tokens[1].trim().equalsIgnoreCase("ifelse")) {
+							System.out.println("End IfElse Called");
+						} else if (tokens[1].trim().equalsIgnoreCase("for")) {
+							System.out.println("End For Loop Caled");
+						} else if (tokens[1].trim().equalsIgnoreCase("switch")) {
+							System.out.println("End Switch Called");
+						} else if (tokens[1].trim().equalsIgnoreCase("while")) {
+							System.out.println("End While Called");
+						} else if (tokens[1].trim().equalsIgnoreCase("dowhile")) {
+							System.out.println("End DoWhile Called");
+						}
+					} else {
+						System.out.println("Error @ " + statements[index]);
+						break;
 					}
-				} else {
-					System.out.println("Error @ " + statements[index]);
-					break;
 				}
-				index++;
 			}
-
+				index++;
+			
 		}
 		return sequence;
 
 	}
 
+		//System.out.println("Error @ " + statements[index]);
 	public static boolean isDigit(String token) {
 		int index = 0;
 		while (index < token.length()) {
@@ -838,13 +1017,46 @@ public class Arduino {
 			return null;
 		}
 
+		@Override
+		public String visit(Break break1) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Continue continue1) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Return return1) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Goto goto1) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String visit(Arduino.remainder remainder) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
 	}
 
 	// -------------------------------------------------------------------------------
 
 	public static void main(String[] args) {
-		String source = " analogWrite 23 to LED.";
-		// String source =
+		
+		//String source = "Goto functionA.";
+		//String source = "analogRead value from ledPin.";
+		String source = "analogWrite 23 to LED.";
+		//String source = "X is remainder of 7 / 5.";
 		// "Setup. Set pinMode of LedPin to INPUT. PinX is 0. PinY is 0. End setup. "
 		// +
 		// " analogRead from LedPin. Loop. digitalWrite LOW to LedPin. End Loop. For x is 0 increasing to 100. PinX is 5. analogRead from LedPin. PinY is 10. End for."
@@ -862,3 +1074,4 @@ public class Arduino {
 		newNode.accept(new Arduino.ArduinoCompiler());
 	}
 }
+
