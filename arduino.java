@@ -1,5 +1,10 @@
+import java.applet.Applet;
+import java.awt.Button;
+import java.awt.TextField;
 import java.util.ArrayList;
-
+import java.applet.*;
+import java.awt.*;
+import java.awt.event.*;
 /**import AST.Break;
 import AST.Id;
 import AST.Assign;
@@ -10,7 +15,9 @@ import Break.Goto;
 import Break.Return;
 import Break.remainder; **/
 
-public class Arduino {
+
+
+public class Arduino extends Applet {
 	// Create an interface Node to reuse
 	public interface Node {
 		<T> T accept(Visitor<T> v);
@@ -861,9 +868,9 @@ public class Arduino {
 
 		@Override
 		public String visit(Loop loop) {
-			System.out.println("Loop(){");
+			output.setText("Loop(){");
 			loop.body.accept(this);
-			System.out.println("}");
+			output.setText("}");
 			return null;
 		}
 
@@ -877,7 +884,7 @@ public class Arduino {
 		public String visit(Assign assign) {
 			Id name = assign.variable;
 			Number value = assign.value;
-			System.out.println("Int " + name.id + " = " + value.n + ";");
+			output.setText("Int " + name.id + " = " + value.n + ";");
 			return null;
 		}
 
@@ -943,9 +950,9 @@ public class Arduino {
 
 		@Override
 		public String visit(setUp setUp) {
-			System.out.println("Setup(){");
+			output.setText("Setup(){");
 			setUp.body.accept(this);
-			System.out.println("}");
+			output.setText("}");
 			return null;
 		}
 
@@ -953,8 +960,7 @@ public class Arduino {
 		public String visit(pinMode pinMode) {
 			Id name = pinMode.predicate;
 			IOvalue value = pinMode.value;
-			System.out
-					.println("pinMode(" + name.id + ", " + value.value + ");");
+			output.setText("pinMode(" + name.id + ", " + value.value + ");");
 			return null;
 		}
 
@@ -963,9 +969,9 @@ public class Arduino {
 			Id name = digitalWrite.predicate;
 			Expression value = digitalWrite.value;
 			if (value.getClass().equals(new HIGH())) {
-				System.out.println("digitalWrite(" + name.id + ", HIGH);");
+				output.setText("digitalWrite(" + name.id + ", HIGH);");
 			} else {
-				System.out.println("digitalWrite(" + name.id + ", LOW);");
+				output.setText("digitalWrite(" + name.id + ", LOW);");
 			}
 			return null;
 		}
@@ -974,22 +980,21 @@ public class Arduino {
 		public String visit(analogWrite analogWrite) {
 			Id name = analogWrite.predicate;
 			Number value = analogWrite.value;
-			System.out
-					.println("analogWrite(" + name.id + ", " + value.n + ");");
+			output.setText("analogWrite(" + name.id + ", " + value.n + ");");
 			return null;
 		}
 
 		@Override
 		public String visit(digitalRead digitalRead) {
 			Id name = digitalRead.id;
-			System.out.println("digitalRead(" + name.id + ");");
+			output.setText("digitalRead(" + name.id + ");");
 			return null;
 		}
 
 		@Override
 		public String visit(analogRead analogRead) {
 			Id name = analogRead.id;
-			System.out.println("analogRead(" + name.id + ");");
+			output.setText("analogRead(" + name.id + ");");
 			return null;
 		}
 
@@ -1004,10 +1009,10 @@ public class Arduino {
 			Id name = forLoop.id;
 			Number start = forLoop.initValue;
 			Number end = forLoop.maxValue;
-			System.out.println("for(int " + name.id + " = " + start.n + "; "
+			output.setText("for(int " + name.id + " = " + start.n + "; "
 					+ name.id + " <" + end.n + "; " + name.id + "++){");
 			forLoop.body.accept(this);
-			System.out.println("}");
+			output.setText("}");
 			return null;
 		}
 
@@ -1050,8 +1055,51 @@ public class Arduino {
 	}
 
 	// -------------------------------------------------------------------------------
+		private static TextField input;
+		private static TextField output;
+	  
+		public void init () {
+	   
+	     // Construct the TextFields
+	     this.input = new TextField(40);
+	     this.output = new TextField(40);
+	     this.output.setEditable(false);
+	     Button b = new Button("Compile");
 
-	public static void main(String[] args) {
+	     // add the button to the layout
+	     this.add(input);
+	     this.add(b);
+	     this.add(output);
+
+	     // specify that action events sent by the
+	     // button or the input TextField should be handled 
+	     // by the same CapitalizerAction object
+	     ArduinoAction ca = new ArduinoAction();
+	     b.addActionListener(ca);
+	     this.input.addActionListener(ca);
+
+	     // notice that ActionEvents produced by output are ignored.
+	   
+	   }
+		
+		 
+	class ArduinoAction implements ActionListener {
+
+		
+
+		  public void actionPerformed(ActionEvent ae) {
+			
+
+		    String s = input.getText();
+		    Node newNode = Arduino.parse(s);
+		    newNode.accept(new Arduino.ArduinoCompiler());
+		   // output.setText(s);
+
+		  }
+
+		}
+
+	/*public static void main(String[] args) {
 		
 		//String source = "Goto functionA.";
 		//String source = "analogRead value from ledPin.";
@@ -1072,6 +1120,6 @@ public class Arduino {
 		System.out.println("#########");
 		System.out.println("Arduino Compiled: ");
 		newNode.accept(new Arduino.ArduinoCompiler());
-	}
+	}*/
 }
 
